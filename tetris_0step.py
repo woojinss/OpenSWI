@@ -20,14 +20,16 @@ HEIGHT = 22
 INTERVAL = 40
 # TODO : FILED값을 채운다.
 FIELD = []
-COLORS = ((0, 0, 0), (255, 165, 0), (0, 0, 255), (0, 255, 255), \
+# 순서대로 BLACK, ORANGE, BLUE, AQUA, LIME, FUCHSIA(PURPLE), YELLOW, RED, GRAY
+COLORS = ((0, 0, 0), (255, 165, 0), (0, 0, 255), (0, 255, 255), 
           (0, 255, 0), (255, 0, 255), (255, 255, 0), (255, 0, 0), (128, 128, 128))
 BLOCK = None
 NEXT_BLOCK = None
 PIECE_SIZE = 24 # 24 x 24
 PIECE_GRID_SIZE = PIECE_SIZE+1 
-BLOCK_DATA = (
-    (
+BLOCK_DATA = ( 
+    (   
+        # 주황색 ㄴ거꾸로 모양
         (0, 0, 1, \
          1, 1, 1, \
          0, 0, 0),
@@ -41,6 +43,7 @@ BLOCK_DATA = (
          0, 1, 0, \
          0, 1, 0),
     ), (
+        # 파랑색 ㄴ 모양
         (2, 0, 0, \
          2, 2, 2, \
          0, 0, 0),
@@ -54,6 +57,7 @@ BLOCK_DATA = (
          0, 2, 0, \
          2, 2, 0)
     ), (
+        # 하늘색 ㅗ 모양
         (0, 3, 0, \
          3, 3, 3, \
          0, 0, 0),
@@ -67,6 +71,7 @@ BLOCK_DATA = (
          3, 3, 0, \
          0, 3, 0)
     ), (
+        # 초록색 계단? 모양
         (4, 4, 0, \
          0, 4, 4, \
          0, 0, 0),
@@ -80,6 +85,7 @@ BLOCK_DATA = (
          4, 4, 0, \
          4, 0, 0)
     ), (
+        # 보라색 계단 ? 거꾸로 모양
         (0, 5, 5, \
          5, 5, 0, \
          0, 0, 0),
@@ -93,6 +99,7 @@ BLOCK_DATA = (
          5, 5, 0, \
          0, 5, 0)
     ), (
+        # 노랑색 네모 모양
         (6, 6, \
         6, 6),
         (6, 6, \
@@ -102,6 +109,7 @@ BLOCK_DATA = (
         (6, 6, \
         6, 6)
     ), (
+        # 빨강색 막대 모양
         (0, 7, 0, 0, \
          0, 7, 0, 0, \
          0, 7, 0, 0, \
@@ -124,13 +132,13 @@ BLOCK_DATA = (
 class Block:
     """ 블록 객체 """
     def __init__(self, count):
-        self.turn = 0 # TODO : 다양한 모양이 나오게 변경하기 
-        self.type = BLOCK_DATA[0] # TODO : 다양한 모양이 나오게 변경하기 
-        self.data = self.type[self.turn]
-        self.size = int(sqrt(len(self.data)))
-        self.xpos = randint(2, 8 - self.size)
-        self.ypos = 1 - self.size
-        self.fire = count + INTERVAL
+        self.turn = 0  #회전
+        self.type = BLOCK_DATA[0]  #블록 모양 데이터  
+        self.data = self.type[self.turn]  #블록 모양 + 회전 데이터
+        self.size = int(sqrt(len(self.data)))  #블록 크기
+        self.xpos = randint(2, 8 - self.size)  #x좌표
+        self.ypos = 1 - self.size  #y좌표
+        self.fire = count + INTERVAL  #낙하 시간
 
     def update(self, count):
         """ 블록 상태 갱신 (소거한 단의 수를 반환한다) """
@@ -155,7 +163,19 @@ class Block:
 
     def draw(self):
         """ 블록을 그린다 """
-        pass
+        for y_offset in range(self.size):
+            for x_offset in range(self.size):
+                index = y_offset * self.size + x_offset
+                val = self.data[index]
+                if (0 <= y_offset + self.ypos < HEIGHT and  
+                    0 <= x_offset + self.xpos < WIDTH and 
+                    val != 0):
+                    f_xpos = PIECE_GRID_SIZE + (x_offset + self.xpos) * PIECE_GRID_SIZE
+                    f_ypos = PIECE_GRID_SIZE + (y_offset + self.ypos) * PIECE_GRID_SIZE
+                    pygame.draw.rect(screen, COLORS[val],
+                                     (f_xpos, f_ypos,
+                                      PIECE_SIZE, PIECE_SIZE))
+        
 
 def erase_line():
     """ TODO : 행이 모두 찬 단을 지운다. 그리고, 소거한 단의 수를 반환한다 """
@@ -173,20 +193,40 @@ def go_next_block(count):
     NEXT_BLOCK = Block(count)
 
 def is_overlapped(xpos, ypos, turn):
-    """ TODO : 블록이 벽이나 땅의 블록과 충돌하는지 아닌지 """
-    pass
+    """ 블록이 벽이나 땅의 블록과 충돌하는지 아닌지 """
+    data = BLOCK.type[turn]
+    for y_offset in range(BLOCK.size):
+        for x_offset in range(BLOCK.size):
+            index = y_offset * BLOCK.size + x_offset
+            val = data[index]
+            
+            if (0 <= xpos + x_offset < WIDTH and
+                0 <= ypos + y_offset < HEIGHT):
+                if (val != 0 and FIELD[ypos + y+offset][xpos + x_offset] != 0):
+                    return true
+    return false
 
 def set_game_field():
-    """ TODO : 필드 구성을 위해 FIELD 값을 세팅한다. """
-    pass
+    """ HIGHT-1 전까지 [8,0,0,0,0,0,0,0,0,0,0,8]
+    HIEGHT-1 은 [8,8,8,8,8,8,8,8,8,8,8,8] """
+    for i in range(HEIGHT - 1):
+        FIELD.insert(0,[8,0,0,0,0,0,0,0,0,0,0,8])
+    FIELD.insert(HEIGHT,[8,8,8,8,8,8,8,8,8,8,8,8])
+    #print(FIELD) #debug
 
 def draw_game_field():
-    """ TODO : 필드를 그린다 """
-    pass
+   # 한 칸 크기 24, 칸끼리 공간 +1
+    for y_offset in range(HEIGHT):
+        for x_offset in range(WIDTH):
+            val = FIELD[y_offset][x_offset]
+            color = COLORS[val]
+            pygame.draw.rect(screen, color, 
+                             (PIECE_GRID_SIZE + x_offset * PIECE_GRID_SIZE,
+                              PIECE_GRID_SIZE + y_offset * PIECE_GRID_SIZE,
+                              PIECE_SIZE, PIECE_SIZE))
 
 def draw_current_block():
-    """ TODO : 현재 블록을 그린다 """
-    pass
+    BLOCK.draw()
 
 def draw_next_block():
     """ TODO : 다음 블록을 그린다 """
